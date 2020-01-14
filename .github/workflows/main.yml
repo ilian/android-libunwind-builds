@@ -55,10 +55,10 @@ jobs:
         mkdir $HOST_LIB_DIR
         cp "$HONGGFUZZ_SRC"/third_party/android/libunwind/src/.libs/*.a $HOST_LIB_DIR
         popd
-        zip artifact.zip libunwind
+        zip -r artifact.zip libunwind
 
     - name: Persist builds
       uses: actions/upload-artifact@v1
       with:
-        name: libunwind_API-${{matrix.ANDROID_API}}_${{matrix.TARGET_ARCH}}
+        name: libunwind_HOST-${{matrix.HOST_ARCH}}_API-${{matrix.ANDROID_API}}_TARGET-${{matrix.TARGET_ARCH}}
         path: 'artifact.zip'

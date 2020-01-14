@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        HOST_ARCH: [arm64]
+        HOST_ARCH: [armv7a-linux-androideabi, aarch64-linux-android]
         TARGET_ARCH: [arm-unknown-linux-androideabi, aarch64-unknown-linux-android]
         ANDROID_API: [21, 22, 23, 24, 26, 27, 28, 29]
 
@@ -60,5 +60,5 @@ jobs:
     - name: Persist builds
       uses: actions/upload-artifact@v1
       with:
-        name: libunwind_HOST-${{matrix.HOST_ARCH}}_API-${{matrix.ANDROID_API}}_TARGET-${{matrix.TARGET_ARCH}}
+        name: libunwind_${{matrix.ANDROID_API}}_${{matrix.HOST_ARCH}}_${{matrix.TARGET_ARCH}}
         path: 'artifact.zip'

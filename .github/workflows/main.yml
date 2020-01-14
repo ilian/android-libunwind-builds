@@ -1,0 +1,54 @@
+name: Build libunwind for Android
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        TARGET_ARCH: [arm-unknown-linux-androideabi, aarch64-unknown-linux-android]
+        ANDROID_API: [21, 22, 23, 24, 26, 27, 28, 29]
+
+    steps:
+    - name: Build 
+      run: |
+        echo "Creating directory on temporary disk (14GB)"
+        export ANDROID_HOME="/mnt/android-sdk"
+        sudo mkdir "$ANDROID_HOME"
+        sudo chown $(id -u):$(id -g) "$ANDROID_HOME"
+
+        echo "Installing dependencies"
+        sudo apt-get update -qq
+        sudo apt-get install default-jdk -qq
+        sudo apt-get install build-essential subversion swig python2.7-dev libedit-dev libncurses5-dev -qq # LLVM
+
+        echo "Installing Android SDK"
+        # Get the latest SDK at https://developer.android.com/studio
+        curl -o sdk.zip https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
+        unzip -qq sdk.zip -d "$ANDROID_HOME"
+        rm sdk.zip
+
+        echo "Installing Android NDK"
+        yes | "$ANDROID_HOME"/tools/bin/sdkmanager "cmake;3.10.2.4988404" "ndk;20.1.5948944" > /dev/null
+        export NDK="$ANDROID_HOME"/ndk/20.1.5948944
+
+        echo "Cloning libunwind"
+        HONGGFUZZ_SRC="$(pwd)/src/honggfuzz"
+        git clone --single-branch --branch patch/ci --depth 1 https://github.com/ilian/honggfuzz.git "$HONGGFUZZ_SRC"
+
+        echo "Building libunwind"
+        pushd "$HONGGFUZZ_SRC"
+        export ANDROID_API=android-${{matrix.ANDROID_API}}
+        ./third_party/android/scripts/compile-libunwind.sh third_party/android/libunwind/ arm64 --target ${{matrix.TARGET_ARCH}}
+        popd
+        
+        echo "Resulting build tree:"
+        find "$HONGGFUZZ_SRC"/third_party/android/libunwind/src/.libs/
+        zip artifact.zip "$HONGGFUZZ_SRC"/third_party/android/libunwind/src/.libs/*.a
+
+    - name: Persist builds
+      uses: actions/upload-artifact@v1
+      with:
+        name: libunwind_API-${{matrix.ANDROID_API}}_${{matrix.TARGET_ARCH}}
+        path: 'artifact.zip'
